@@ -1,0 +1,72 @@
+name: Build MystryxLauncher
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build EXE
+        run: |
+          python -m PyInstaller --noconfirm --onefile --windowed --icon=branding.ico --add-data "branding.ico;." main.py
+          Rename-Item -Path "dist\main.exe" -NewName "MystryxLauncher.exe"
+
+      - name: Upload EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: MystryxLauncher-Windows
+          path: dist/MystryxLauncher.exe
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
+          brew install create-dmg
+
+      - name: Build APP
+        run: |
+          python -m PyInstaller --noconfirm --onefile --windowed --icon=branding.ico --add-data "branding.ico:." main.py
+          mv dist/main dist/MystryxLauncher || mv dist/main.app dist/MystryxLauncher.app || true
+
+      - name: Build DMG
+        run: |
+          create-dmg \
+            --volname "MystryxLauncher" \
+            --window-pos 200 120 \
+            --window-size 600 400 \
+            --icon-size 100 \
+            --app-drop-link 450 185 \
+            "MystryxLauncher.dmg" \
+            "dist/"
+
+      - name: Upload DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: MystryxLauncher-macOS
+          path: MystryxLauncher.dmg
