@@ -1,12 +1,10 @@
 name: Build MystryxLauncher
-
 on:
   push:
     branches: [ main ]
   workflow_dispatch:
 
 jobs:
-
   build-windows:
     runs-on: windows-latest
     steps:
@@ -51,16 +49,32 @@ jobs:
 
       - name: Convert ICO to ICNS
         run: |
+          python3 - <<'EOF'
+          from PIL import Image
+          img = Image.open("branding.ico")
+          frames = []
+          try:
+              while True:
+                  frames.append((img.size, img.copy()))
+                  img.seek(img.tell() + 1)
+          except EOFError:
+              pass
+          best_frame = max(frames, key=lambda x: x[0][0])[1] if frames else img
+          best_frame = best_frame.convert("RGBA")
+          best_frame.save("branding_source.png")
+          EOF
+
           mkdir -p branding.iconset
-          sips -z 16 16     branding.ico --out branding.iconset/icon_16x16.png    2>/dev/null || true
-          sips -z 32 32     branding.ico --out branding.iconset/icon_16x16@2x.png 2>/dev/null || true
-          sips -z 32 32     branding.ico --out branding.iconset/icon_32x32.png    2>/dev/null || true
-          sips -z 64 64     branding.ico --out branding.iconset/icon_32x32@2x.png 2>/dev/null || true
-          sips -z 128 128   branding.ico --out branding.iconset/icon_128x128.png  2>/dev/null || true
-          sips -z 256 256   branding.ico --out branding.iconset/icon_128x128@2x.png 2>/dev/null || true
-          sips -z 256 256   branding.ico --out branding.iconset/icon_256x256.png  2>/dev/null || true
-          sips -z 512 512   branding.ico --out branding.iconset/icon_256x256@2x.png 2>/dev/null || true
-          sips -z 512 512   branding.ico --out branding.iconset/icon_512x512.png  2>/dev/null || true
+          sips -z 16 16     branding_source.png --out branding.iconset/icon_16x16.png
+          sips -z 32 32     branding_source.png --out branding.iconset/icon_16x16@2x.png
+          sips -z 32 32     branding_source.png --out branding.iconset/icon_32x32.png
+          sips -z 64 64     branding_source.png --out branding.iconset/icon_32x32@2x.png
+          sips -z 128 128   branding_source.png --out branding.iconset/icon_128x128.png
+          sips -z 256 256   branding_source.png --out branding.iconset/icon_128x128@2x.png
+          sips -z 256 256   branding_source.png --out branding.iconset/icon_256x256.png
+          sips -z 512 512   branding_source.png --out branding.iconset/icon_256x256@2x.png
+          sips -z 512 512   branding_source.png --out branding.iconset/icon_512x512.png
+          sips -z 1024 1024 branding_source.png --out branding.iconset/icon_512x512@2x.png
           iconutil -c icns branding.iconset -o branding.icns
 
       - name: Build APP
