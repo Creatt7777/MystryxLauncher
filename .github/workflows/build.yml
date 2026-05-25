@@ -46,13 +46,27 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          pip install pyinstaller
+          pip install pyinstaller Pillow
           brew install create-dmg
+
+      - name: Convert ICO to ICNS
+        run: |
+          mkdir -p branding.iconset
+          sips -z 16 16     branding.ico --out branding.iconset/icon_16x16.png    2>/dev/null || true
+          sips -z 32 32     branding.ico --out branding.iconset/icon_16x16@2x.png 2>/dev/null || true
+          sips -z 32 32     branding.ico --out branding.iconset/icon_32x32.png    2>/dev/null || true
+          sips -z 64 64     branding.ico --out branding.iconset/icon_32x32@2x.png 2>/dev/null || true
+          sips -z 128 128   branding.ico --out branding.iconset/icon_128x128.png  2>/dev/null || true
+          sips -z 256 256   branding.ico --out branding.iconset/icon_128x128@2x.png 2>/dev/null || true
+          sips -z 256 256   branding.ico --out branding.iconset/icon_256x256.png  2>/dev/null || true
+          sips -z 512 512   branding.ico --out branding.iconset/icon_256x256@2x.png 2>/dev/null || true
+          sips -z 512 512   branding.ico --out branding.iconset/icon_512x512.png  2>/dev/null || true
+          iconutil -c icns branding.iconset -o branding.icns
 
       - name: Build APP
         run: |
-          python -m PyInstaller --noconfirm --onefile --windowed --icon=branding.ico --add-data "branding.ico:." main.py
-          mv dist/main dist/MystryxLauncher || mv dist/main.app dist/MystryxLauncher.app || true
+          python -m PyInstaller --noconfirm --onedir --windowed --icon=branding.icns --add-data "branding.ico:." main.py
+          mv dist/main dist/MystryxLauncher.app 2>/dev/null || mv "dist/main.app" "dist/MystryxLauncher.app" 2>/dev/null || true
 
       - name: Build DMG
         run: |
