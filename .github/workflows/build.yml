@@ -5,34 +5,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          pip install pyinstaller
-
-      - name: Build EXE
-        run: |
-          python -m PyInstaller --noconfirm --onefile --windowed --icon=branding.ico --add-data "branding.ico;." main.py
-          Rename-Item -Path "dist\main.exe" -NewName "MystryxLauncher.exe"
-
-      - name: Upload EXE
-        uses: actions/upload-artifact@v4
-        with:
-          name: MystryxLauncher-Windows
-          path: dist/MystryxLauncher.exe
-
   build-macos:
-    runs-on: macos-latest
+    runs-on: macos-13
     steps:
       - uses: actions/checkout@v4
 
@@ -77,10 +51,24 @@ jobs:
           sips -z 1024 1024 branding_source.png --out branding.iconset/icon_512x512@2x.png
           iconutil -c icns branding.iconset -o branding.icns
 
-      - name: Build APP
+      - name: Install universal Python dependencies
         run: |
-          python -m PyInstaller --noconfirm --onedir --windowed --icon=branding.icns --add-data "branding.ico:." main.py
+          pip install --upgrade pip
+          arch -x86_64 pip install pyinstaller Pillow
+          pip install pyinstaller Pillow
+
+      - name: Build Universal APP
+        run: |
+          python -m PyInstaller --noconfirm --onedir --windowed \
+            --icon=branding.icns \
+            --add-data "branding.ico:." \
+            --target-arch universal2 \
+            main.py
           mv dist/main dist/MystryxLauncher.app 2>/dev/null || mv "dist/main.app" "dist/MystryxLauncher.app" 2>/dev/null || true
+
+      - name: Sign APP (ad-hoc)
+        run: |
+          codesign --force --deep --sign - "dist/MystryxLauncher.app"
 
       - name: Build DMG
         run: |
